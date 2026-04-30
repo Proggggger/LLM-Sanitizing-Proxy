@@ -8,6 +8,7 @@ import structlog
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import RedirectResponse
 
 from app.config import Config, load_config, ProviderConfig
 from app.providers import (
@@ -39,18 +40,25 @@ def create_provider(name: str, provider_config: ProviderConfig) -> LLMProvider:
     # Check if this is NVIDIA based on base_url
     is_nvidia = "nvidia" in provider_config.base_url.lower()
     
-    provider_class = {
-        "openai": OpenAIProvider,
+    # Define which providers require special handling due to API differences
+    special_providers = {
         "anthropic": AnthropicProvider,
         "google": GoogleProvider,
         "ollama": OllamaProvider,
-        "nvidia": NVIDIAProvider if is_nvidia else None,
-    }.get(name)
+    }
+    # provider_class = {
+    #     "openai": OpenAIProvider,
+    #     "anthropic": AnthropicProvider,
+    #     "google": GoogleProvider,
+    #     "ollama": OllamaProvider,
+    #     "nvidia": NVIDIAProvider if is_nvidia else None,
+    # }.get(name)
+    provider_class = special_providers.get(name, OpenAIProvider)
+    
 
-    # Fallback to NVIDIA if base_url contains nvidia
-    if not provider_class and is_nvidia:
-        provider_class = NVIDIAProvider
-    elif not provider_class:
+
+    
+    if not provider_class:
         logger.warning(f"Unknown provider: {name}")
         return None
 
@@ -59,6 +67,7 @@ def create_provider(name: str, provider_config: ProviderConfig) -> LLMProvider:
         api_key=provider_config.api_key,
         base_url=provider_config.base_url,
         models=provider_config.models,
+        model_prefix=provider_config.model_prefix,
         timeout=provider_config.timeout,
         retry_count=provider_config.retry_count,
     )
@@ -133,6 +142,11 @@ def create_app(cfg: Config) -> FastAPI:
     async def chat_completions_compat(request: Request):
         """Alternative chat completions endpoint."""
         return await handle_chat_completions(request)
+    
+    @app.get("/", include_in_schema=False)
+    async def redirect_to_docs():
+        """Redirect user to the root of the documentation"""
+        return RedirectResponse(url="/docs")
 
     @app.get("/v1/models")
     async def list_models():
@@ -197,7 +211,8 @@ async def handle_chat_completions(request: Request):
         role = msg.get("role", "user")
         content = msg.get("content", "")
         messages.append(Message(role=MessageRole(role), content=content))
-
+    print(config)
+    print(messages_data)
     # Rate limiting
     user_id = request.headers.get("X-User-ID", "default")
     allowed, wait_time = rate_limiter.acquire(user_id)
@@ -284,10 +299,23 @@ async def handle_chat_completions(request: Request):
                 "created": response.created_at,
             }
 
+    # except Exception as e:
+    #     logger.error(f"Provider error: {e}", model=model, provider=provider.name)
+    #     router.record_request(provider.name, success=False)
+    #     raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Provider error: {e}", model=model, provider=provider.name)
         router.record_request(provider.name, success=False)
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "message": str(e),
+                    "type": "server_error",
+                    "code": 500
+                }
+            }
+        )
 
 
 async def stream_generator(
@@ -314,8 +342,18 @@ async def stream_generator(
                 yield "data: [DONE]\n\n"
 
     except Exception as e:
+        # logger.error(f"Streaming error: {e}")
+        # yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        # yield "data: [DONE]\n\n"
         logger.error(f"Streaming error: {e}")
-        yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        error_payload = {
+            "error": {
+                "message": str(e),
+                "type": "server_error",
+                "code": 500
+            }
+        }
+        yield f"data: {json.dumps(error_payload)}\n\n"
         yield "data: [DONE]\n\n"
 
 

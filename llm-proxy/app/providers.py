@@ -72,14 +72,28 @@ class LLMProvider(abc.ABC):
         models: List[str],
         timeout: int = 60,
         retry_count: int = 3,
+        model_prefix: str = ""
     ):
+        
         self.name = name
         self.api_key = api_key
         self.base_url = base_url
-        self.models = models
+        #self.models = models
+        self.model_prefix = model_prefix
+        # Prepend prefix to configured models
+        if self.model_prefix:
+            self.models = [f"{self.model_prefix}{m}" for m in models]
+        else:
+            self.models = models
         self.timeout = timeout
         self.retry_count = retry_count
         self._client: Optional[httpx.AsyncClient] = None
+
+    def strip_prefix(self, model_name: str) -> str:
+        """Strip the prefix from a model name if present."""
+        if self.model_prefix and model_name.startswith(self.model_prefix):
+            return model_name[len(self.model_prefix):]
+        return model_name
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -108,9 +122,10 @@ class LLMProvider(abc.ABC):
 
     def is_model_supported(self, model: str) -> bool:
         """Check if model is supported by this provider."""
-        return model in self.models or any(
-            model.startswith(m.split("-")[0]) for m in self.models if m
-        )
+        # return model in self.models or any(
+        #     model.startswith(m.split("-")[0]) for m in self.models if m
+        # )
+        return model in self.models
 
     async def close(self):
         """Close the HTTP client."""
@@ -139,7 +154,7 @@ class OpenAIProvider(LLMProvider):
         ]
 
         payload = {
-            "model": request.model,
+            "model": self.strip_prefix(request.model),
             "messages": messages,
         }
 
@@ -254,7 +269,7 @@ class AnthropicProvider(LLMProvider):
                 })
 
         payload = {
-            "model": request.model,
+            "model": self.strip_prefix(request.model),
             "messages": messages,
         }
 
@@ -350,6 +365,7 @@ class GoogleProvider(LLMProvider):
             })
 
         payload = {
+            #"model": self.strip_prefix(request.model),
             "contents": contents,
             "generationConfig": {},
         }
@@ -440,7 +456,7 @@ class NVIDIAProvider(LLMProvider):
         ]
 
         payload = {
-            "model": request.model,
+            "model": self.strip_prefix(request.model),
             "messages": messages,
         }
 
@@ -538,7 +554,7 @@ class OllamaProvider(LLMProvider):
         ]
 
         payload = {
-            "model": request.model,
+            "model": self.strip_prefix(request.model),
             "messages": messages,
             "stream": request.stream,
             "options": {},

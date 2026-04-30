@@ -13,6 +13,7 @@ class ProviderConfig(BaseModel):
     api_key: Optional[str] = None
     base_url: str
     models: List[str] = Field(default_factory=list)
+    model_prefix: Optional[str] = None  # Add this
     timeout: int = 60
     retry_count: int = 3
 
