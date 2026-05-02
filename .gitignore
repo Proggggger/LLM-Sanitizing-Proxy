@@ -2,3 +2,4 @@ venv/
 .pytest_cache/
 .qwen/
 llm-proxy/__pycache__/
+llm-proxy/config.yaml
