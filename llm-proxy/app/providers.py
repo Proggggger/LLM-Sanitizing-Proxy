@@ -94,6 +94,11 @@ class LLMProvider(abc.ABC):
         if self.model_prefix and model_name.startswith(self.model_prefix):
             return model_name[len(self.model_prefix):]
         return model_name
+    
+    async def fetch_available_models(self) -> List[str]:
+        """Fetch models from the provider API."""
+        raise NotImplementedError("fetch_available_models not implemented for this provider")
+    
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -145,6 +150,21 @@ class OpenAIProvider(LLMProvider):
             "Authorization": f"Bearer {self.api_key}",
         }
         return headers
+    
+    async def fetch_available_models(self) -> List[str]:
+        """Fetch models from OpenAI-compatible /v1/models endpoint."""
+        url = f"{self.base_url}/models"
+        # async with self.client.get(url, headers=self._build_headers()) as response:
+        #     response.raise_for_status()
+        #     data = response.json()
+        #     # Assuming standard OpenAI schema: {"data": [{"id": "model1"}, ...]}
+        #     return [model["id"] for model in data.get("data", [])]
+        response = await self.client.get(url, headers=self._build_headers())
+        response.raise_for_status()
+        data = response.json()
+    
+        # Assuming standard OpenAI schema: {"data": [{"id": "model1"}, ...]}
+        return [model["id"] for model in data.get("data", [])]
 
     def _convert_request(self, request: ChatRequest) -> Dict[str, Any]:
         """Convert internal request to OpenAI format."""

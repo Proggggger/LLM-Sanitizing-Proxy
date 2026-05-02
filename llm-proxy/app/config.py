@@ -14,6 +14,7 @@ class ProviderConfig(BaseModel):
     base_url: str
     models: List[str] = Field(default_factory=list)
     model_prefix: Optional[str] = None  # Add this
+    fetch_models: bool = False  #Option for fetching model list from  provider
     timeout: int = 60
     retry_count: int = 3
 

@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.responses import RedirectResponse
 
+from contextlib import asynccontextmanager
+
 from app.config import Config, load_config, ProviderConfig
 from app.providers import (
     LLMProvider,
@@ -77,11 +79,29 @@ def create_app(cfg: Config) -> FastAPI:
     """Create and configure the FastAPI application."""
     global config, router, rate_limiter, cache
     config = cfg
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # Startup: Fetch models if enabled
+        for name, provider in providers.items():
+            config_entry = config.providers.get(name)
+            if config_entry and config_entry.fetch_models:
+                try:
+                    logger.info(f"Fetching models for {name}...")
+                    models = await provider.fetch_available_models()
+                    # Apply prefix if configured
+                    if provider.model_prefix:
+                        models = [f"{provider.model_prefix}{m}" for m in models]
+                    provider.models = models # Update the provider's model list
+                    logger.info(f"Updated models for {name}: {len(models)} found")
+                except Exception as e:
+                    logger.error(f"Failed to fetch models for {name}: {e}")
+        yield
 
     app = FastAPI(
         title="LLM Proxy",
         description="Unified LLM proxy with support for multiple providers",
         version="1.0.0",
+        lifespan=lifespan
     )
 
     # Add CORS
@@ -131,6 +151,8 @@ def create_app(cfg: Config) -> FastAPI:
     # Initialize middleware
     rate_limiter = RateLimiter(config.rate_limiting)
     cache = ResponseCache(config.caching)
+
+    
 
     # Register routes
     @app.post("/v1/chat/completions")
