@@ -9,6 +9,7 @@ from app.providers import (
     OpenAIProvider,
     AnthropicProvider,
     OllamaProvider,
+    DummyProvider,
 )
 from app.router import Router, ProviderStats
 from app.middleware import RateLimiter, ResponseCache
@@ -78,6 +79,36 @@ class TestProviders:
         assert provider.is_model_supported("gpt-3.5-turbo")
         assert provider.is_model_supported("gpt-4")
         assert not provider.is_model_supported("claude-3")
+
+    @pytest.mark.asyncio
+    async def test_dummy_provider_chat(self):
+        """Test DummyProvider chat and chat_stream."""
+        provider = DummyProvider(
+            name="dummy",
+            models=["dummy-model"],
+        )
+
+        request = ChatRequest(
+            model="dummy-model",
+            messages=[
+                Message(role=MessageRole.USER, content="Hello World Test"),
+            ],
+        )
+
+        # Test non-streaming chat
+        response = await provider.chat(request)
+        assert response.content == "Hello World Test"
+        assert response.model == "dummy-model"
+
+        # Test streaming chat
+        chunks = []
+        async for chunk in provider.chat_stream(request):
+            chunks.append(chunk)
+
+        # Check content chunks reconstructed
+        combined = "".join(c.content for c in chunks if c.content)
+        assert combined == "Hello World Test"
+        assert chunks[-1].finish_reason == "stop"
 
 
 class TestRouter:
