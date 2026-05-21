@@ -643,3 +643,61 @@ class OllamaProvider(LLMProvider):
                         )
                 except json.JSONDecodeError:
                     continue
+
+
+class DummyProvider(LLMProvider):
+    """Dummy provider that returns the prompt as the response."""
+
+    def __init__(self, **kwargs):
+        if "base_url" not in kwargs or not kwargs["base_url"]:
+            kwargs["base_url"] = "http://dummy"
+        if "api_key" not in kwargs:
+            kwargs["api_key"] = "dummy-key"
+        super().__init__(**kwargs)
+
+    def _build_headers(self) -> Dict[str, str]:
+        return {}
+
+    async def fetch_available_models(self) -> List[str]:
+        return self.models
+
+    async def chat(self, request: ChatRequest) -> ChatResponse:
+        """Non-streaming chat completion returning the last prompt."""
+        prompt = ""
+        if request.messages:
+            prompt = request.messages[-1].content
+
+        return ChatResponse(
+            id=f"dummy-{int(time.time())}",
+            model=request.model,
+            content=prompt,
+            role="assistant",
+            finish_reason="stop",
+            usage={
+                "prompt_tokens": len(prompt) // 4,
+                "completion_tokens": len(prompt) // 4,
+                "total_tokens": (len(prompt) // 4) * 2,
+            },
+        )
+
+    async def chat_stream(
+        self, request: ChatRequest
+    ) -> AsyncGenerator[StreamChunk, None]:
+        """Streaming chat completion returning the last prompt."""
+        prompt = ""
+        if request.messages:
+            prompt = request.messages[-1].content
+
+        if prompt:
+            words = prompt.split(" ")
+            for i, word in enumerate(words):
+                space = " " if i > 0 else ""
+                yield StreamChunk(
+                    content=space + word,
+                    finish_reason=None,
+                )
+        yield StreamChunk(
+            content="",
+            finish_reason="stop",
+        )
+

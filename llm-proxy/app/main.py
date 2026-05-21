@@ -2,6 +2,7 @@
 import json
 import time
 import uuid
+import logging
 from typing import AsyncGenerator, Dict, Optional
 
 import structlog
@@ -12,7 +13,7 @@ from fastapi.responses import RedirectResponse
 
 from contextlib import asynccontextmanager
 
-from app.config import Config, load_config, ProviderConfig
+from app.config import Config, load_config, ProviderConfig, LoggingConfig
 from app.providers import (
     LLMProvider,
     OpenAIProvider,
@@ -20,6 +21,7 @@ from app.providers import (
     GoogleProvider,
     OllamaProvider,
     NVIDIAProvider,
+    DummyProvider,
     ChatRequest,
     Message,
     MessageRole,
@@ -27,6 +29,8 @@ from app.providers import (
 )
 from app.router import Router
 from app.middleware import RateLimiter, ResponseCache
+from app.interceptor import intercept_request
+
 
 logger = structlog.get_logger()
 
@@ -47,6 +51,7 @@ def create_provider(name: str, provider_config: ProviderConfig) -> LLMProvider:
         "anthropic": AnthropicProvider,
         "google": GoogleProvider,
         "ollama": OllamaProvider,
+        "dummy": DummyProvider,
     }
     # provider_class = {
     #     "openai": OpenAIProvider,
@@ -233,8 +238,12 @@ async def handle_chat_completions(request: Request):
         role = msg.get("role", "user")
         content = msg.get("content", "")
         messages.append(Message(role=MessageRole(role), content=content))
-    print(config)
-    print(messages_data)
+
+    intercepted = intercept_request("filter", messages_data)
+    print(intercepted)
+    #messages_data = intercepted.processed_data
+    #print(config)
+    #print(messages_data)
     # Rate limiting
     user_id = request.headers.get("X-User-ID", "default")
     allowed, wait_time = rate_limiter.acquire(user_id)
@@ -379,12 +388,40 @@ async def stream_generator(
         yield "data: [DONE]\n\n"
 
 
+def configure_logging(logging_config: LoggingConfig):
+    """Configure structlog globally based on config."""
+    
+    # Map configuration string level to logging level
+    level = getattr(logging, logging_config.level.upper(), logging.INFO)
+
+    # Configure processors based on format
+    processors = [
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+    ]
+
+    if logging_config.format == "json":
+        processors.append(structlog.processors.JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer(colors=True))
+
+    structlog.configure(
+        processors=processors,
+        logger_factory=structlog.PrintLoggerFactory(),
+        wrapper_class=structlog.make_filtering_bound_logger(level),
+        cache_logger_on_first_use=True,
+    )
+
 def run_server(cfg_path: str = "config.yaml"):
     """Run the LLM proxy server."""
     import uvicorn
 
     global config
     config = load_config(cfg_path)
+
+    configure_logging(config.logging)
 
     app = create_app(config)
 
