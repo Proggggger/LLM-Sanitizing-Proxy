@@ -95,6 +95,7 @@ class Router:
     ) -> Optional[LLMProvider]:
         """Find the appropriate provider for a given model."""
         matching_providers = []
+        default_providers = []
 
         # Find matching rules
         for rule in self.rules:
@@ -112,20 +113,23 @@ class Router:
             elif condition.get("default"):
                 provider_name = rule.provider
                 if provider_name in self.providers:
-                    matching_providers.append(self.providers[provider_name])
+                    default_providers.append(self.providers[provider_name])
 
-        if not matching_providers:
+        # Use specific matches if any, otherwise fall back to default providers
+        final_providers = matching_providers if matching_providers else default_providers
+
+        if not final_providers:
             # Fallback: try to find provider by model name
             for provider_name, provider in self.providers.items():
                 if provider.is_model_supported(model):
-                    matching_providers.append(provider)
+                    final_providers.append(provider)
 
-        if not matching_providers:
+        if not final_providers:
             return None
 
         # Use load balancer to select from matching providers
         return self.load_balancer.select_provider(
-            matching_providers,
+            final_providers,
             self.stats,
             model,
         )

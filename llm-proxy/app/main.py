@@ -44,7 +44,7 @@ cache: Optional[ResponseCache] = None
 def create_provider(name: str, provider_config: ProviderConfig) -> LLMProvider:
     """Create a provider instance from configuration."""
     # Check if this is NVIDIA based on base_url
-    is_nvidia = "nvidia" in provider_config.base_url.lower()
+    is_nvidia = "nvidia" in (provider_config.base_url or "").lower()
     
     # Define which providers require special handling due to API differences
     special_providers = {
@@ -53,17 +53,14 @@ def create_provider(name: str, provider_config: ProviderConfig) -> LLMProvider:
         "ollama": OllamaProvider,
         "dummy": DummyProvider,
     }
-    # provider_class = {
-    #     "openai": OpenAIProvider,
-    #     "anthropic": AnthropicProvider,
-    #     "google": GoogleProvider,
-    #     "ollama": OllamaProvider,
-    #     "nvidia": NVIDIAProvider if is_nvidia else None,
-    # }.get(name)
     provider_class = special_providers.get(name, OpenAIProvider)
     
-
-
+    # Dummy provider does not require config parameters
+    if name == "dummy":
+        return DummyProvider(
+            name="dummy",
+            models=["dummy-model"],
+        )
     
     if not provider_class:
         logger.warning(f"Unknown provider: {name}")
@@ -127,7 +124,23 @@ def create_app(cfg: Config) -> FastAPI:
                 providers[name] = provider
                 logger.info(f"Initialized provider: {name}")
 
+    # Ensure DummyProvider is always available
+    if "dummy" not in providers:
+        providers["dummy"] = DummyProvider(name="dummy", models=["dummy-model"])
+        logger.info("Initialized provider: dummy (auto)")
+
     # Initialize router
+    # Ensure dummy routing rule exists
+    if "dummy" in providers:
+        from app.config import RoutingRule
+        dummy_rule_exists = any(r.provider == "dummy" for r in config.routing)
+        if not dummy_rule_exists:
+            config.routing.append(RoutingRule(
+                name="dummy-rule",
+                condition={"model_pattern": "dummy.*"},
+                provider="dummy",
+                priority=20,
+            ))
     if config.routing:
         router_obj = Router(
             providers=providers,

@@ -666,10 +666,11 @@ class DummyProvider(LLMProvider):
         prompt = ""
         if request.messages:
             prompt = request.messages[-1].content
-
+        print(prompt)
         return ChatResponse(
             id=f"dummy-{int(time.time())}",
-            model=request.model,
+            #model=request.model,
+            model="dummy-model",
             content=prompt,
             role="assistant",
             finish_reason="stop",
@@ -688,16 +689,14 @@ class DummyProvider(LLMProvider):
         if request.messages:
             prompt = request.messages[-1].content
 
-        if prompt:
-            words = prompt.split(" ")
-            for i, word in enumerate(words):
-                space = " " if i > 0 else ""
-                yield StreamChunk(
-                    content=space + word,
-                    finish_reason=None,
-                )
-        yield StreamChunk(
-            content="",
-            finish_reason="stop",
-        )
+        words = prompt.split(" ") if prompt else [""]
+        
+        for i, word in enumerate(words):
+            space = " " if i > 0 else ""
+            content = space + word
+            finish_reason = "stop" if i == len(words) - 1 else None
+            yield StreamChunk(
+                content=content,
+                finish_reason=finish_reason,
+            )
 
