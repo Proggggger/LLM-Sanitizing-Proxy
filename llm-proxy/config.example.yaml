@@ -1,21 +1,33 @@
 # LLM Proxy Configuration
 # Copy this file to config.yaml and configure your providers
-
+# LLM Proxy Configuration
 server:
   host: "0.0.0.0"
-  port: 8000
+  port: 8088
   debug: false
 
 # Provider configurations
 providers:
-  openai:
+  nvidia:
     enabled: true
-    api_key: "${OPENAI_API_KEY}"  # or use env variable
-    base_url: "https://api.openai.com/v1"
+    api_key: "API-KEY"
+    base_url: "https://integrate.api.nvidia.com/v1"
     models:
-      - "gpt-4-turbo-preview"
-      - "gpt-3.5-turbo"
+      - "qwen/qwen3.5-397b-a17b"
+      - "minimaxai/minimax-m2.7"
     timeout: 60
+    retry_count: 3
+
+
+
+  groq:
+    enabled: true
+    api_key: "API-KEY"
+    base_url: "https://api.groq.com/openai/v1"
+    models:
+      - "llama-3.1-8b-instant"
+    timeout: 60
+    model_prefix: "groq-" 
     retry_count: 3
 
   anthropic:
@@ -49,12 +61,46 @@ providers:
     timeout: 120
     retry_count: 2
 
+  dummy:
+    enabled: true
+    api_key: "dummy-key"
+    base_url: "http://dummy"
+    models:
+      - "dummy-model"
+    timeout: 60
+    retry_count: 3
+
 # Routing rules (processed in order)
 routing:
+  # Route NVIDIA models
+  - name: "nvidia-qwen"
+    condition:
+      model_pattern: "qwen/.*"
+    provider: "nvidia"
+    priority: 10
+
+  - name: "Llama-groq"
+    condition:
+      model_pattern: "groq-*"
+    provider: "groq"
+    priority: 10
+
+  - name: "nvidia-minimax"
+    condition:
+      model_pattern: "minimaxai/.*"
+    provider: "nvidia"
+    priority: 10
+
   # Route by model name pattern
   - name: "openai-gpt4"
     condition:
       model_pattern: "gpt-4.*"
+    provider: "openai"
+    priority: 10
+
+  - name: "openai-gpt35"
+    condition:
+      model_pattern: "gpt-3.*"
     provider: "openai"
     priority: 10
 
@@ -76,33 +122,49 @@ routing:
     provider: "ollama"
     priority: 10
 
+  - name: "dummy-route"
+    condition:
+      model_pattern: "dummy.*"
+    provider: "dummy"
+    priority: 10
+
   # Default fallback
   - name: "default"
     condition:
       default: true
-    provider: "openai"
+    provider: "groq"
     priority: 1
 
-# Load balancing strategies: round-robin, random, least-requests
-load_balancing:
+# Load balancing
+load_balancing:  #in development
   strategy: "round-robin"
-  health_check_interval: 30  # seconds
+  health_check_interval: 30
 
 # Rate limiting
-rate_limiting:
+rate_limiting:  #in development
   enabled: false
   requests_per_minute: 60
   burst: 10
 
 # Caching
-caching:
+caching:  #in development
   enabled: false
-  ttl: 3600  # seconds
+  ttl: 3600
   max_size: 1000
 
 # Logging
 logging:
-  level: "INFO"
-  format: "json"
+  level: "DEBUG"    #INFO
+  format: "console"
   include_body: true
   include_headers: false
+
+# Filter configuration
+filter:
+  enabled: true
+  type: "regexp" # Options: regexp, presidio, llm
+  regexphybrid: false
+  
+  llm_url: "http://localhost:5001/api/v1/generate"
+  llm_prompt: "Filter the content for sensitive information." #for now prompt is hardcoded, so this option not working
+
