@@ -62,6 +62,16 @@ class ServerConfig(BaseModel):
     debug: bool = False
 
 
+class FilterConfig(BaseModel):
+    """Configuration for Request Filtering."""
+    enabled: bool = False
+    type: str = "regexp" # regexp, presidio, llm
+    regexphybrid: bool = False
+    regexp_rules: List[Dict[str, str]] = Field(default_factory=list)
+    llm_url: str = ""
+    llm_prompt: str = ""
+
+
 class Config(BaseModel):
     """Main configuration class."""
     server: ServerConfig = Field(default_factory=ServerConfig)
@@ -71,6 +81,7 @@ class Config(BaseModel):
     rate_limiting: RateLimitingConfig = Field(default_factory=RateLimitingConfig)
     caching: CachingConfig = Field(default_factory=CachingConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
+    filter: FilterConfig = Field(default_factory=FilterConfig)
 
     @classmethod
     def from_yaml(cls, path: str) -> "Config":

@@ -247,16 +247,19 @@ async def handle_chat_completions(request: Request):
 
     # Convert messages
     messages = []
+    
+    # Intercept and process messages
+    intercepted = intercept_request("filter", messages_data, config.filter)
+    print(intercepted)
+    if isinstance(intercepted, dict) and intercepted.get("status") == "success":
+        messages_data = intercepted.get("processed_data", messages_data)
+    else:
+        logger.warning("Request interception failed or returned error, proceeding with original data")
+
     for msg in messages_data:
         role = msg.get("role", "user")
         content = msg.get("content", "")
         messages.append(Message(role=MessageRole(role), content=content))
-
-    intercepted = intercept_request("filter", messages_data)
-    print(intercepted)
-    #messages_data = intercepted.processed_data
-    #print(config)
-    #print(messages_data)
     # Rate limiting
     user_id = request.headers.get("X-User-ID", "default")
     allowed, wait_time = rate_limiter.acquire(user_id)
