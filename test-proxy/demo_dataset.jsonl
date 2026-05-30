@@ -1,0 +1,20 @@
+{"tokens": ["Мій", "рахунок", "UA344564648922632252139976013", "та", "картка", "4319", "8354", "9159", "4232"], "labels": ["O", "O", "IBAN", "O", "O", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER"], "domain": ["S-RE"]}
+  {"tokens": ["Мене", "звати", "Артюх", "Олег", "Адамович", "."], "labels": ["O", "O", "NAME", "NAME", "NAME", "O"], "domain": ["S-HR", "L-DIALOG"]}
+  {"tokens": ["Чи", "є", "вільні", "місця", "на", "завтра", "?"], "labels": ["O", "O", "O", "O", "O", "O", "O"], "domain": ["L-DIALOG", "L-CHAT"]}
+  {"tokens": ["Документи", "для", "Авраменка", "Михайла", "Романовича", "."], "labels": ["O", "O", "NAME", "NAME", "NAME", "O"], "domain": ["S-RE", "S-DELIVERY"]}
+  {"tokens": ["ІПН", ":", "3422488741", ",", "УНЗР", ":", "19781215-75622"], "labels": ["O", "O", "RNOKPP", "O", "O", "O", "UNZR"], "domain": ["S-HR"]}
+  {"tokens": ["ІПН", ":", "8916113733", ",", "УНЗР", ":", "20121018-66831"], "labels": ["O", "O", "RNOKPP", "O", "O", "O", "UNZR"], "domain": ["S-DELIVERY", "S-HR"]}
+  {"tokens": ["Заяву", "подав", "Артюшенко", "Руслан", "Соломонович", "."], "labels": ["O", "O", "NAME", "NAME", "NAME", "O"], "domain": ["L-DIALOG", "S-RE"]}
+  {"tokens": ["Мені", "потрібна", "консультація", "по", "кредиту", "."], "labels": ["O", "O", "O", "O", "O", "O"], "domain": ["S-BANK"]}
+  {"tokens": ["Мені", "потрібна", "консультація", "по", "кредиту", "."], "labels": ["O", "O", "O", "O", "O", "O"], "domain": ["S-BANK"]}
+  {"tokens": ["Чи", "є", "вільні", "місця", "на", "завтра", "?"], "labels": ["O", "O", "O", "O", "O", "O", "O"], "domain": ["L-CHAT"]}
+  {"tokens": ["ІПН", ":", "4907867373", ",", "УНЗР", ":", "20131221-19403"], "labels": ["O", "O", "RNOKPP", "O", "O", "O", "UNZR"], "domain": ["S-DELIVERY"]}
+  {"tokens": ["Доставити", "за", "адресою", ":", "місто", "Сіверськ", ",", "вул", ".", "Онілової", ",", "буд", ".", "33"], "labels": ["O", "O", "O", "O", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS"], "domain": ["S-RE"]}
+  {"tokens": ["ІПН", ":", "6048994391", ",", "УНЗР", ":", "19581026-92347"], "labels": ["O", "O", "RNOKPP", "O", "O", "O", "UNZR"], "domain": ["S-BANK"]}
+  {"tokens": ["Мій", "рахунок", "UA640719949256491799209292340", "та", "картка", "5364", "7076", "4774", "5190"], "labels": ["O", "O", "IBAN", "O", "O", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER"], "domain": ["S-RE", "L-CHAT"]}
+  {"tokens": ["Заяву", "подала", "Саєнко", "Еріка", "Алевтинівна", "."], "labels": ["O", "O", "NAME", "NAME", "NAME", "O"], "domain": ["S-RE", "S-BANK"]}
+  {"tokens": ["Коли", "відкривається", "найближче", "відділення", "?"], "labels": ["O", "O", "O", "O", "O"], "domain": ["S-HR", "S-RE"]}
+  {"tokens": ["Доставити", "за", "адресою", ":", "місто", "Курахове", ",", "вул", ".", "Пастера", ",", "буд", ".", "39"], "labels": ["O", "O", "O", "O", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS", "ADDRESS"], "domain": ["L-CHAT", "S-HR"]}
+  {"tokens": ["Заяву", "подав", "Вівчаренко", "Віктор", "Павлович", "."], "labels": ["O", "O", "NAME", "NAME", "NAME", "O"], "domain": ["S-AUTO", "S-TELECOM"]}
+  {"tokens": ["ІПН", ":", "7541491675", ",", "УНЗР", ":", "20201016-88397"], "labels": ["O", "O", "RNOKPP", "O", "O", "O", "UNZR"], "domain": ["S-SUPPORT"]}
+  {"tokens": ["Мій", "рахунок", "UA888482571634868293145636647", "та", "картка", "4753", "9809", "5675", "4506"], "labels": ["O", "O", "IBAN", "O", "O", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER", "BANK_CARD_NUMBER"], "domain": ["S-DELIVERY", "S-AUTO"]}
