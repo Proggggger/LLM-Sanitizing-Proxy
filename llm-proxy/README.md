@@ -1,4 +1,6 @@
-# LLM Proxy
+# LLM‑Proxy
+
+This directory contains the **LLM‑Proxy** service – a FastAPI‑based gateway that forwards OpenAI‑compatible chat‑completion requests to multiple underlying LLM providers and optionally applies request‑filtering (regex, Presidio, or LLM‑based PII masking).
 
 Unified LLM proxy server with support for multiple providers, streaming, rate limiting, and caching.
 
@@ -34,6 +36,10 @@ export OPENAI_API_KEY="your-openai-key"
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export GOOGLE_API_KEY="your-google-key"
 ```
+### Filtering configuration
+In **filter** section of config file you can enable request interception for filtering/ THrer are three **type** options available: *regex, presidio, llm* also **hybrid** configuration option present, which additionaly enables regexp filter after main one.
+
+**Pay attention** LLM filter requires external llm server, url for accessing it is also stored in config. By default it's adopted for __*KoboldCPP*__ https://github.com/LostRuins/koboldcpp as download and run solution. Proxy was tested with gemma-4-E4B model(https://huggingface.co/unsloth/gemma-4-26B-A4B-it-GGUF).
 
 ## Usage
 
@@ -46,10 +52,12 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 Or using the CLI:
 
 ```bash
-python main.py
+python main.py config.yaml
 ```
 
 ### API Endpoints
+
+API documentation is available when proxy is running on http://127.0.0.1:8088/docs
 
 #### Chat Completions (OpenAI-compatible)
 
@@ -89,6 +97,18 @@ curl -X POST http://localhost:8000/v1/chat/completions \
 GET /v1/models
 GET /models
 ```
+
+#### Health Check
+
+## Repository Layout
+
+- `app/` – core FastAPI application, provider implementations, routing, interceptor and configuration.
+- `config.example.yaml` – example configuration file.
+- `requirements.txt` – Python dependencies.
+- `tests/` – (optional) pytest suite for the proxy itself.
+- `../test-proxy/` – separate test harness with datasets, test runner and expected result snapshots.
+
+---
 
 #### Health Check
 

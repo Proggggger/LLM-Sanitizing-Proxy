@@ -45,6 +45,10 @@ The proxy itself lives in `../llm-proxy`. To start it locally:
 cd ../llm-proxy
 python -m uvicorn app.main:app --reload
 ```
+or just
+```bash
+python main.py config.yaml
+```
 Then execute the runner against the running service:
 ```bash
 python test_runner.py --host http://localhost:8000
